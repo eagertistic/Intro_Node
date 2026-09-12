@@ -1,0 +1,5 @@
+CREATE TABLE notes (
+    id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    content VARCHAR(1024) NOT NULL, 
+    tags text[]
+)
