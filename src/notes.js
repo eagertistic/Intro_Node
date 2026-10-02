@@ -1,4 +1,4 @@
-import { insertDB, saveDB, getDB } from "./db.js";
+import { saveDB, getDB, insertNote } from "./db.js";
 
 export const newNote = async (note, tags) => {
   const newNote = {
@@ -6,13 +6,13 @@ export const newNote = async (note, tags) => {
     id: Date.now().toLocaleString("en-GB", { timeZone: "UTC" }),
     content: note,
   };
-  await insertDB(newNote);
+  await insertNote(newNote);
   return newNote;
 };
 
 export const getAllNotes = async () => {
-  const { notes } = await getDB();
-  return notes;
+  const db = await getDB();
+  return db.notes;
 };
 
 export const findNote = async (keyword) => {
@@ -24,7 +24,7 @@ export const findNote = async (keyword) => {
 };
 
 export const removeNote = async (id) => {
-  const { notes } = await getAllNotes();
+  const notes = await getAllNotes();
   const match = notes.find((note) => {
     note.id === id;
   });
