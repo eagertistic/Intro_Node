@@ -1,20 +1,6 @@
 import http from "node:http";
 import open from "open";
-import pg from "pg";
-const { Pool } = pg;
-
-const pool = new Pool({
-  user: "postgres",
-  password: "mysecretpassword",
-  host: "localhost",
-  port: 5432,
-  database: "postgres",
-});
-
-pool.on("error", (err, client) => {
-  console.error("Unexpected error on idle client", err);
-  process.exit(-1);
-});
+import fs from "node:fs/promises";
 
 const interpolate = (html, data) => {
   return html.replace(/\{\{\s*(\w+)\s*\}\}/g, (match, placeholder) => {
@@ -22,18 +8,7 @@ const interpolate = (html, data) => {
   });
 };
 
-const notes = [
-  {
-    content: "hello",
-    tags: ["test1"],
-  },
-  {
-    content: "hello2",
-    tags: ["test2", "test3"],
-  },
-];
-
-const formNotes = (notes) => {
+const formatNotes = (notes) => {
   return notes
     .map((note) => {
       return `
@@ -46,5 +21,21 @@ const formNotes = (notes) => {
     })
     .join("");
 };
+const createSocket = (notes) => {
+  return http.createServer(async (req, res) => {
+    const HTML_PATH = new URL("./template.html", import.meta.url).pathname;
+    const template = await fs.readFile(HTML_PATH, "utf-8");
+    const html = interpolate(template, { notes: formatNotes(notes) });
 
-console.log(formNotes(notes));
+    res.writeHead(200, { "Content-Type": "text/html" });
+    res.end(html);
+  });
+};
+
+export const start = (notes, port) => {
+  const server = createSocket(notes);
+  server.listen(port, () => {
+    console.log(`Server is listening on port ${port}`);
+  });
+  open(`http://localhost:${port}`);
+};

@@ -3,13 +3,14 @@ import { hideBin } from "yargs/helpers";
 import pg from "pg";
 const { Pool } = pg;
 import { listNotes } from "./utils.js";
+import { start } from "./server.js";
 
 const pool = new Pool({
-  user: "postgres",
+  user: "unknown",
   password: "mysecretpassword",
   host: "localhost",
   port: 5432,
-  database: "postgres",
+  database: "my_notes",
 });
 
 pool.on("error", (err, client) => {
@@ -29,7 +30,7 @@ yargs(hideBin(process.argv))
     },
     async (argv) => {
       try {
-        await pool.query("INSERT INTO notes (content, tag) VALUES ($1, $2)", [
+        await pool.query("INSERT INTO notes (content, tags) VALUES ($1, $2)", [
           argv.note,
           argv.tags ? argv.tags.split(",") : [],
         ]);
@@ -131,13 +132,20 @@ yargs(hideBin(process.argv))
         type: "number",
       });
     },
-    async (argv) => {},
+    async (argv) => {
+      try {
+        let response = await pool.query("SELECT content, tags FROM notes");
+        start(response.rows, argv.port);
+      } finally {
+        await pool.end();
+      }
+    },
   )
   .command(
     "clean",
     "remove all notes",
     () => {},
-    async (argv) => {
+    async () => {
       try {
         await pool.query("TRUNCATE TABLE notes RESTART IDENTITY");
         console.log("All notes removed");
